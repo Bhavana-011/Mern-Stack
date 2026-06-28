@@ -54,40 +54,53 @@ const register = async (req, res) => {
 };
 
 //  LOGIN
+
+
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;  
+    const { email, password } = req.body;
 
-    const user = await Investor.findOne({ email });
+    //  Check Investor
+    let user = await Investor.findOne({ email });
+    let role = "INVESTOR";
+
+    //  If not investor → check admin
+    if (!user) {
+      user = await Admin.findOne({ email });
+      role = "ADMIN";
+    }
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if (!user.password) {
-      return res.status(400).json({ message: "Password not set for user" });
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
+    //  Check password
+    const valid = await bcrypt.compare(
+      password,
+      role === "ADMIN" ? user.passwordHash : user.password
+    );
 
     if (!valid) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
+    //  Add role in token
     const token = jwt.sign(
-      { id: user._id },
+      { id: user._id, role },
       process.env.JWT_SECRET
     );
 
     res.json({
       success: true,
-      token
+      token,
+      role
     });
 
   } catch (err) {
-    console.log("LOGIN ERROR:", err);
+    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 module.exports = { register, login };

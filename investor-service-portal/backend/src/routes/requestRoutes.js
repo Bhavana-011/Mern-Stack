@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const auth = require('../middlewares/authMiddleware');
+const role = require('../middlewares/roleMiddleware');
 
 const {
   createRequest,
@@ -9,20 +10,20 @@ const {
 } = require('../controllers/requestController');
 
 
-//  CREATE REQUEST
-router.post('/', auth, createRequest);
+//  Only INVESTOR can create request
+router.post('/', auth, role("INVESTOR"), createRequest);
 
 
-//  UPDATE STATUS (ADMIN)
-router.put('/:id', auth, updateStatus);
+//  Only ADMIN can update
+router.put('/:id', auth, role("ADMIN"), updateStatus);
 
 
-//  UPLOAD DOCUMENT
+//  Both can upload document
 router.post('/upload', auth, uploadDocument);
 
 
-//  SLA DASHBOARD
-router.get('/sla', auth, getSLADashboard);
+//  Only ADMIN can view SLA dashboard
+router.get('/sla', auth, role("ADMIN"), getSLADashboard);
 
 
 module.exports = router;
