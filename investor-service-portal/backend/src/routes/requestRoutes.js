@@ -4,26 +4,36 @@ const role = require('../middlewares/roleMiddleware');
 
 const {
   createRequest,
+  getAllRequests,
+  getMyRequests,
+  getRequestById,
   updateStatus,
   uploadDocument,
   getSLADashboard
 } = require('../controllers/requestController');
 
 
-//  Only INVESTOR can create request
+//  INVESTOR → Create Request
 router.post('/', auth, role("INVESTOR"), createRequest);
 
+//  ADMIN → SLA Dashboard
+router.get('/sla', auth, role("ADMIN"), getSLADashboard);
 
-//  Only ADMIN can update
+//  ADMIN → Get All Requests
+router.get('/all', auth, role("ADMIN"), getAllRequests);
+
+//  INVESTOR → Get My Requests
+router.get('/my', auth, role("INVESTOR"), getMyRequests);
+
+//  Get Single Request
+router.get('/:id', auth, getRequestById);
+
+//  ADMIN → Update Request
 router.put('/:id', auth, role("ADMIN"), updateStatus);
 
-
-//  Both can upload document
+//  Upload Document
 router.post('/upload', auth, uploadDocument);
 
-
-//  Only ADMIN can view SLA dashboard
-router.get('/sla', auth, role("ADMIN"), getSLADashboard);
 
 
 module.exports = router;

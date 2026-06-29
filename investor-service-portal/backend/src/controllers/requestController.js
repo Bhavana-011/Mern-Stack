@@ -6,17 +6,76 @@ const Notification = require('../../models/Notification');
 const RequestDocument = require('../../models/RequestDocument');
 
 
-//  CREATE REQUEST (uses requestService)
+// ================== CREATE REQUEST ==================
 exports.createRequest = async (req, res) => {
   try {
-    const data = {
+    const request = await requestService.createRequest({
       investorId: req.user.id,
       requestType: req.body.requestType,
       requestData: req.body.requestData,
       description: req.body.description
-    };
+    });
 
-    const request = await requestService.createRequest(data);
+    res.json({ success: true, request });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// ================== GET ALL REQUESTS (ADMIN) ==================
+exports.getAllRequests = async (req, res) => {
+  try {
+    const requests = await ServiceRequest.find();
+
+    res.json({
+      success: true,
+      count: requests.length,
+      requests
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// ================== GET MY REQUESTS (INVESTOR) ==================
+exports.getMyRequests = async (req, res) => {
+  try {
+    console.log("Token user id:", req.user.id);
+    console.log("Type of id:", typeof req.user.id);
+
+    const requests = await ServiceRequest.find({
+      investorId: req.user.id.toString()
+    });
+
+    console.log("Requests found:", requests);
+
+    res.json({
+      success: true,
+      requests
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ================== GET SINGLE REQUEST ==================
+exports.getRequestById = async (req, res) => {
+  try {
+    const request = await ServiceRequest.findOne({
+      requestId: req.params.id
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found"
+      });
+    }
 
     res.json({
       success: true,
@@ -24,24 +83,18 @@ exports.createRequest = async (req, res) => {
     });
 
   } catch (err) {
-    console.log("CREATE ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 
-
-//  UPDATE STATUS
+// ================== UPDATE STATUS ==================
 exports.updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     const request = await ServiceRequest.findOne({ requestId: id });
-
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
 
     const oldStatus = request.status;
 
@@ -53,7 +106,7 @@ exports.updateStatus = async (req, res) => {
 
     await request.save();
 
-    //  Audit log
+    //  Audit
     await AuditLog.create({
       logId: "LOG" + Date.now(),
       requestId: id,
@@ -72,20 +125,15 @@ exports.updateStatus = async (req, res) => {
       type: "STATUS_UPDATE"
     });
 
-    res.json({
-      success: true,
-      message: "Status updated "
-    });
+    res.json({ success: true, message: "Updated " });
 
   } catch (err) {
-    console.log("UPDATE ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 
-
-//  UPLOAD DOCUMENT
+// ================== UPLOAD DOCUMENT ==================
 exports.uploadDocument = async (req, res) => {
   try {
     const { requestId, documentType, fileName } = req.body;
@@ -97,20 +145,15 @@ exports.uploadDocument = async (req, res) => {
       fileName
     });
 
-    res.json({
-      success: true,
-      document: doc
-    });
+    res.json({ success: true, doc });
 
   } catch (err) {
-    console.log("UPLOAD ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 
-
-//  GET SLA DASHBOARD (uses slaService)
+// ================== SLA DASHBOARD ==================
 exports.getSLADashboard = async (req, res) => {
   try {
     const requests = await ServiceRequest.find();
@@ -123,11 +166,10 @@ exports.getSLADashboard = async (req, res) => {
       success: true,
       summary,
       compliance,
-      averageResolutionTime: avgTime
+      avgTime
     });
 
   } catch (err) {
-    console.log("SLA ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
