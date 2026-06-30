@@ -1,6 +1,8 @@
 const Investor = require('../../models/Investors');
+const Admin = require('../../models/Admin');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
 
 //  REGISTER
 const register = async (req, res) => {
@@ -60,31 +62,32 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    //  Check Investor
+    //  1. check investor
     let user = await Investor.findOne({ email });
     let role = "INVESTOR";
 
-    //  If not investor → check admin
+    //  2. if not investor → check admin roles
     if (!user) {
       user = await Admin.findOne({ email });
-      role = "ADMIN";
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      role = user.role;  // ADMIN / MANAGER / EXECUTIVE
     }
 
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    //  Check password
+    //  compare password
     const valid = await bcrypt.compare(
       password,
-      role === "ADMIN" ? user.passwordHash : user.password
+      role === "INVESTOR" ? user.password : user.passwordHash
     );
 
     if (!valid) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    //  Add role in token
+    //  create token
     const token = jwt.sign(
       { id: user._id, role },
       process.env.JWT_SECRET
@@ -97,10 +100,8 @@ const login = async (req, res) => {
     });
 
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 module.exports = { register, login };

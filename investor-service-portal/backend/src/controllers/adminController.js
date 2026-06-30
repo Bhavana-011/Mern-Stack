@@ -3,35 +3,35 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 
+
+
+//  Register Admin / Manager / Executive
 const registerAdmin = async (req, res) => {
   try {
-    const { adminId, name, email, password, role, department } = req.body;
+    const { adminId, name, email, password, role } = req.body;
 
-    const existing = await Admin.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: "Admin already exists" });
+    //  validate role
+    if (!["ADMIN", "MANAGER", "EXECUTIVE"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
     }
 
     const hash = await bcrypt.hash(password, 10);
 
-    const admin = new Admin({
+    const admin = await Admin.create({
       adminId,
       name,
       email,
-      passwordHash: hash, 
-      role,
-      department
+      passwordHash: hash,
+      role
     });
-
-    await admin.save();
 
     res.json({
       success: true,
-      message: "Admin registered "
+      message: `${role} registered `,
+      admin
     });
 
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -59,7 +59,8 @@ const loginAdmin = async (req, res) => {
 
     res.json({
       success: true,
-      token
+      token,
+      role:admin.role
     });
 
   } catch (err) {
