@@ -1,6 +1,9 @@
 require('dotenv').config();
 
 const express = require('express');
+
+const cors = require('cors');
+
 const connectDB = require('./utils/db');
 
 const authRoutes = require('./routes/authRoutes');
@@ -13,6 +16,12 @@ const app = express();
 
 //  1. Connect to MongoDB
 connectDB();
+
+
+app.use(cors({
+  origin: 'http://localhost:5173'
+}));
+
 
 //  2. Middleware
 app.use(express.json());
